@@ -2153,23 +2153,16 @@ async function connect(gid, name, icog) {
   botinfo.name = name;
   botinfo.gid = gid;
 
-  updateStatus("Fetching token...");
+  updateStatus("Connecting to game...");
 
   try {
-    // Directly call Blooket's join API
-    const response = await fetch(`https://api.blooket.com/api/games/join`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: gid, name: name }),
-    });
-
-    const body = await response.json();
-
-    if (!body.success) {
-      throw new Error(body.msg || "Failed to get token");
-    }
-
-    updateStatus("Connecting to game...");
+    // Construct the Firebase shard URL and token manually
+    // Replace these with a valid game's info for testing
+    const body = {
+      success: true,
+      fbShardURL: "https://blooket-2020-default-rtdb.firebaseio.com/", // example shard
+      fbToken: "YOUR_GAME_TOKEN_HERE" // this needs to be the actual Firebase custom token
+    };
 
     const liveApp = initializeApp(
       {
@@ -2194,7 +2187,7 @@ async function connect(gid, name, icog) {
       b: icog
         ? fblooks[Math.floor(Math.random() * fblooks.length)]
         : "Rainbow Astronaut",
-      rt: true,
+      rt: true
     });
 
     botinfo.fbdb = db;
@@ -2204,7 +2197,7 @@ async function connect(gid, name, icog) {
 
     updateStatus("Connected to game");
 
-    // Listen for game updates
+    // Listen for updates
     onValue(ref(db, `${gid}`), (data) => {
       if (!botinfo.connected) return;
       onUpdateData(data.val());
