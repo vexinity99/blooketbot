@@ -2314,15 +2314,7 @@ updateStatus("Ready");
 //end
 
 // simple online count code
-try {
-  const ws = new WebSocket("wss://" + location.host + "/onlinecount");
-  ws.onmessage = (msg) => {
-    const el = document.querySelector("#onlinecount");
-    if (el) el.innerText = msg.data;
-  };
-} catch (e) {
-  console.warn("WebSocket disabled");
-}
+console.warn("Online count WebSocket disabled");
 
 //discord chat code
 
