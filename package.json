@@ -1,7 +1,7 @@
 {
   "name": "blooketbot",
   "version": "1.0.0",
-  "description": "Blooket Bot - Node.js + Firebase",
+  "description": "Blooket Bot with fake Firebase backend",
   "main": "server.js",
   "type": "module",
   "scripts": {
