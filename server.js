@@ -1,32 +1,40 @@
 import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
-import bodyParser from "body-parser";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors()); // allow cross-origin requests
-app.use(bodyParser.json());
+// Fix __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Proxy endpoint to get the token
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public"))); // serve index.html & script.js
+
+// Example join endpoint
 app.put("/join", async (req, res) => {
-  const { id, name } = req.body;
-  if (!id || !name) {
-    return res.status(400).json({ success: false, msg: "Missing id or name" });
-  }
-
   try {
-    const response = await fetch("https://fb.blooket.com/c/firebase/join", {
+    const { id, name } = req.body;
+    if (!id || !name) {
+      return res.status(400).json({ success: false, msg: "Missing id or name" });
+    }
+
+    // Forward request to Blooket's Firebase join endpoint
+    const fbRes = await fetch(`https://fb.blooket.com/c/firebase/join`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         "Origin": "https://goldquest.blooket.com"
       },
-      body: JSON.stringify({ id, name }),
+      body: JSON.stringify({ id, name })
     });
 
-    const data = await response.json();
+    const data = await fbRes.json();
     res.json(data);
   } catch (err) {
     console.error(err);
@@ -34,6 +42,7 @@ app.put("/join", async (req, res) => {
   }
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
