@@ -9,10 +9,11 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
+/* fix dirname for ES modules */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/* serve website files */
+/* serve your website files */
 app.use(express.static(__dirname));
 
 /* homepage */
@@ -20,21 +21,24 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-/* join proxy */
+/* join endpoint */
 app.post("/join", async (req, res) => {
   try {
     const { id, name } = req.body;
 
-    const response = await fetch("https://play.blooket.com/api/playersessions/solo", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        gameId: id,
-        name: name
-      })
-    });
+    const response = await fetch(
+      "https://play.blooket.com/api/playersessions/join",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          id: id,
+          name: name
+        })
+      }
+    );
 
     const data = await response.json();
     res.json(data);
