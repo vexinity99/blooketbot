@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -7,6 +9,18 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/* serve website files */
+app.use(express.static(__dirname));
+
+/* homepage */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+/* join proxy */
 app.post("/join", async (req, res) => {
   try {
     const { id, name } = req.body;
@@ -23,8 +37,8 @@ app.post("/join", async (req, res) => {
     });
 
     const data = await response.json();
-
     res.json(data);
+
   } catch (err) {
     console.error(err);
     res.json({
