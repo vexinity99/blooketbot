@@ -1997,23 +1997,28 @@ function createCsSel(text, vals, action) {
   var iv = document.createElement("input");
   iv.className = "typing-dropdown";
   iv.setAttribute("list", "options-" + text);
-  iv.setAttribute("placeholder", "Select or Type");
+   iv.setAttribute("placeholder", "Select or Type");
   inp.appendChild(iv);
+
   var dl = document.createElement("datalist");
   dl.id = "options-" + text;
+
   vals.sort().forEach((e) => {
     var opt = document.createElement("option");
     opt.innerText = e?.name;
     opt.value = e?.value;
-    iv.appendChild(opt);
+    dl.appendChild(opt);
   });
-  inp.appendChild(iv);
+
+  inp.appendChild(dl);
+
   inp.addEventListener("click", function (e) {
     if (e.target === iv) {
       return;
     }
     action(iv.value);
   });
+
   return inp;
 }
 
@@ -2026,53 +2031,81 @@ function findGameCode(str) {
     return null;
   }
 }
+
 //CHAT CODE
 var dragging = false;
+
 var prevpos = {
   x: 0,
   y: 0,
 };
-document.querySelector("#drag").addEventListener("mousedown", (e) => {
-  dragging = true;
-});
+
+const dragElement = document.querySelector("#drag");
+
+if (dragElement) {
+  dragElement.addEventListener("mousedown", (e) => {
+    dragging = true;
+  });
+
+  dragElement.addEventListener("mouseup", (e) => {
+    dragging = false;
+  });
+}
+
 document.body.addEventListener("mousemove", function (e) {
   if (dragging) {
-    document.querySelector(".chat").style.left =
-      parseInt(document.querySelector(".chat").style.left) +
-      e.clientX -
-      prevpos.x +
-      "px";
-    document.querySelector(".chat").style.top =
-      parseInt(document.querySelector(".chat").style.top) +
-      e.clientY -
-      prevpos.y +
-      "px";
+    const chatBox = document.querySelector(".chat");
+
+    if (chatBox) {
+      chatBox.style.left =
+        parseInt(chatBox.style.left || 0) +
+        e.clientX -
+        prevpos.x +
+        "px";
+
+      chatBox.style.top =
+        parseInt(chatBox.style.top || 0) +
+        e.clientY -
+        prevpos.y +
+        "px";
+    }
   }
+
   prevpos = {
     x: e.clientX,
     y: e.clientY,
   };
 });
-document.querySelector("#chat").addEventListener("keydown", (e) => {
-  if (e.keyCode == 13) {
-    var msg = document.querySelector("#chat").value;
-    if (msg[0] == "/") {
-      processCmd(msg);
-    } else {
-      sendChatMsg(msg);
+
+const chatInput = document.querySelector("#chat");
+
+if (chatInput) {
+  chatInput.addEventListener("keydown", (e) => {
+    if (e.keyCode == 13) {
+      var msg = chatInput.value;
+
+      if (msg && msg[0] == "/") {
+        processCmd(msg);
+      } else if (msg) {
+        sendChatMsg(msg);
+      }
+
+      chatInput.value = "";
     }
-    document.querySelector("#chat").value = "";
-  }
-});
+  });
+}
 
 function processCmd(msg) {
   var cmd = msg.split("/")[1];
+
   switch (cmd) {
     case "clear":
-      document.querySelector(
-        ".chatcontainer"
-      ).innerHTML = `<div class="chatmsg"></div>`;
+      const chatContainer = document.querySelector(".chatcontainer");
+      if (chatContainer) {
+        chatContainer.innerHTML = `<div class="chatmsg"></div>`;
+      }
       break;
+
     case "help":
       addChatMessage(
         "Available Commands: /clear (clears chat window), /help (shows this menu)"
@@ -2080,9 +2113,7 @@ function processCmd(msg) {
       break;
   }
 }
-document.querySelector("#drag").addEventListener("mouseup", (e) => {
-  dragging = false;
-});
+
 async function genToken(gid, name) {
   const { fbToken, fbShardURL } = await fetch("join", {
     body: JSON.stringify({
@@ -2094,6 +2125,7 @@ async function genToken(gid, name) {
     },
     method: "POST",
   }).then((e) => e.json());
+
   return {
     gid,
     name,
