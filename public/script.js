@@ -2147,104 +2147,93 @@ function genMessage(msg, amt) {
   return t;
 }
 //firebase code
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js';
-import { getAuth, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js';
-import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js';
+import { initializeApp, getAuth, signInWithCustomToken, getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 
 const botinfo = {
   connected: false,
   connecting: false,
-  name: "",
-  gid: "",
+  name: null,
+  gid: null,
   fbdb: null,
   liveApp: null,
 };
 
-export async function connect(gid, name, icog) {
-  const status = document.getElementById("status");
+const fblooks = ["Rainbow Astronaut", "Blue Bunny", "Red Ninja", "Green Slime"]; // example looks
+
+function updateStatus(msg) {
+  document.getElementById("status").innerText = "Status: " + msg;
+}
+
+function errorBar(msg) {
+  const e = document.getElementById("errorConsole");
+  e.innerText = msg;
+  console.error(msg);
+}
+
+async function join() {
+  const gid = document.getElementById("gcode").value;
+  const name = document.getElementById("gname").value;
+
+  if (!gid || !name) {
+    errorBar("Enter both game ID and nickname");
+    return;
+  }
+
   botinfo.connected = false;
   botinfo.connecting = true;
   botinfo.name = name;
   botinfo.gid = gid;
 
-  status.innerText = "Fetching token...";
+  updateStatus("Fetching token...");
 
-  let body;
   try {
-    const res = await fetch("/join", {
+    const body = await fetch("/join", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: gid, name }),
-    });
-    body = await res.json();
-  } catch (err) {
-    status.innerText = "Failed to fetch token!";
-    console.error(err);
-    botinfo.connecting = false;
-    return;
-  }
+    }).then((res) => res.json());
 
-  if (!body.success) {
-    status.innerText = "Error: " + body.msg;
-    botinfo.connecting = false;
-    return;
-  }
+    if (!body.success) {
+      throw new Error(body.msg);
+    }
 
-  status.innerText = "Connecting to game...";
-  const liveApp = initializeApp({
-    apiKey: "AIzaSyCA-cTOnX19f6LFnDVVsHXya3k6ByP_MnU",
-    authDomain: "blooket-2020.firebaseapp.com",
-    projectId: "blooket-2020",
-    storageBucket: "blooket-2020.appspot.com",
-    messagingSenderId: "741533559105",
-    appId: "1:741533559105:web:b8cbb10e6123f2913519c0",
-    measurementId: "G-S3H5NGN10Z",
-    databaseURL: body.fbShardURL,
-  }, Date.now().toString());
+    updateStatus("Connecting to game...");
 
-  const auth = getAuth(liveApp);
-  try {
+    const liveApp = initializeApp({
+      apiKey: "AIzaSyCA-cTOnX19f6LFnDVVsHXya3k6ByP_MnU",
+      authDomain: "blooket-2020.firebaseapp.com",
+      projectId: "blooket-2020",
+      storageBucket: "blooket-2020.appspot.com",
+      messagingSenderId: "741533559105",
+      appId: "1:741533559105:web:b8cbb10e6123f2913519c0",
+      databaseURL: body.fbShardURL,
+    }, Date.now().toString());
+
+    const auth = getAuth(liveApp);
     await signInWithCustomToken(auth, body.fbToken);
-  } catch (err) {
-    status.innerText = "Firebase auth failed!";
-    console.error(err);
+
+    const db = getDatabase(liveApp);
+    await set(ref(db, `${gid}/c/${name}`), {
+      b: fblooks[Math.floor(Math.random() * fblooks.length)],
+      rt: true,
+    });
+
+    botinfo.fbdb = db;
+    botinfo.liveApp = liveApp;
     botinfo.connecting = false;
-    return;
+    botinfo.connected = true;
+    updateStatus("Connected to game");
+
+    onValue(ref(db, `${gid}`), (data) => {
+      if (!botinfo.connected) return;
+      console.log("Game data updated:", data.val());
+    });
+
+  } catch (err) {
+    botinfo.connecting = false;
+    updateStatus("Ready");
+    errorBar("Connect error: " + err.message);
   }
-
-  const db = getDatabase(liveApp);
-  await set(ref(db, `${gid}/c/${name}`), {
-    b: icog ? randomLook() : "Rainbow Astronaut",
-    rt: true,
-  });
-
-  botinfo.fbdb = db;
-  botinfo.liveApp = liveApp;
-  botinfo.connecting = false;
-  botinfo.connected = true;
-
-  status.innerText = "Connected!";
-
-  // Listen for updates
-  onValue(ref(db, `${gid}`), data => {
-    if (!botinfo.connected) return;
-    console.log("Game data update:", data.val());
-  });
-}
-
-// Example helper
-function randomLook() {
-  const fblooks = ["Rainbow Astronaut","Purple Penguin","Green Goblin","Blue Robot"];
-  return fblooks[Math.floor(Math.random() * fblooks.length)];
-}
-
-// Optional: set a value in the user object
-export async function setUserVal(path, val) {
-  if (!botinfo.connected) {
-    console.error("Not connected!");
-    return;
-  }
-  await set(ref(botinfo.fbdb, `/${botinfo.gid}/c/${botinfo.name}/${path}`), val);
 }
 
 function bypassFilter(str) {
