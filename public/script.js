@@ -2148,8 +2148,6 @@ function genMessage(msg, amt) {
 }
 //firebase code
 // ===== Global bot info =====
-const botinfo = { connected: false, connecting: false, name: "", gid: "", fbdb: null, liveApp: null };
-const fblooks = ["Rainbow Astronaut", "Cool Robot", "Fancy Penguin", "Space Explorer"]; // example
 
 // ===== Status/Error functions =====
 function updateStatus(msg) {
