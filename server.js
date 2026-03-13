@@ -1,40 +1,41 @@
-import express from "express";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
+const express = require("express");
+const fetch = require("node-fetch");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(cors());
 app.use(express.json());
+app.use(express.static("public"));
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, "public")));
+app.post("/join", async (req, res) => {
+  const { id, name } = req.body;
 
-app.put("/join", (req, res) => {
   try {
-    const { id, name } = req.body;
-    if (!id || !name) {
-      return res.json({ success: false, msg: "Missing game ID or name" });
-    }
-
-    // Fake Firebase info (works with your original connect() logic)
-    const fbToken = "FAKE_FB_TOKEN_123456789";
-    const fbShardURL = "https://blooket-firebase-shard.firebaseio.com";
-
-    return res.json({
-      success: true,
-      fbToken,
-      fbShardURL,
+    const r = await fetch("https://fb.blooket.com/c/firebase/join", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        id: id,
+        name: name
+      })
     });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, msg: "Server error" });
+
+    const data = await r.json();
+    res.json(data);
+
+  } catch (e) {
+
+    res.json({
+      success: false,
+      msg: "Join request failed"
+    });
+
   }
 });
 
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Server running on port " + PORT);
 });
