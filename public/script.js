@@ -2208,6 +2208,31 @@ async function connect(gid, name, icog, reqbody = false) {
     return;
   }
 
+// After your connect function
+async function join() {
+  const gid = document.getElementById("gcode").value;
+  const name = document.getElementById("gname").value;
+  const icog = document.getElementById("icogmode")?.checked || false;
+
+  if (!gid || !name) {
+    errorBar("Please enter a game ID and nickname!");
+    return;
+  }
+
+  updateStatus("Connecting...");
+
+  try {
+    await connect(gid, name, icog); // calls your existing connect()
+  } catch (err) {
+    console.error(err);
+    errorBar("Connect failed: " + err.message);
+    updateStatus("Ready");
+  }
+}
+
+// Make it accessible globally so onclick works
+window.join = join;
+  
   updateStatus("Connecting to game...");
 
   if (body.success) {
@@ -2583,5 +2608,4 @@ function system_message(message, code) {
 
   chat.appendChild(system_message_container);
 
-  window.join = join;
 }
