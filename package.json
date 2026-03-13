@@ -1,19 +1,18 @@
 {
   "name": "blooketbot",
   "version": "1.0.0",
-  "description": "Blooket bot hosted with Node.js",
-  "type": "module",
+  "description": "Blooket Bot - Node.js + Firebase",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
-  },
-  "engines": {
-    "node": "22.x"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "node-fetch": "^3.3.2",
     "firebase": "^10.10.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
