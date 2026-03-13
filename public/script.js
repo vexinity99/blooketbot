@@ -2147,90 +2147,87 @@ function genMessage(msg, amt) {
   return t;
 }
 //firebase code
-// ===== Global bot info =====
-
-// ===== Status/Error functions =====
-function updateStatus(msg) {
-  const s = document.getElementById("status");
-  if (s) s.innerText = "Status: " + msg;
-}
-
-function errorBar(msg) {
-  const e = document.getElementById("error");
-  if (!e) return;
-  e.innerText = msg;
-  e.style.transform = "translateY(-100%)";
-  setTimeout(() => e.style.transform = "translateY(0%)", 4000);
-}
-
-// ===== Firebase connect function =====
-async function connect(gid, name, icog, reqbody=false) {
+async function connect(gid, name, icog, reqbody = false) {
   botinfo.connected = false;
   botinfo.connecting = true;
   botinfo.name = name;
   botinfo.gid = gid;
+
   updateStatus("Fetching token...");
 
-  // For demo purposes, we generate a fake token
-  const body = {
-    success: true,
-    fbShardURL: "https://blooket-2020-default-rtdb.firebaseio.com",
-    fbToken: "YOUR_DEMO_TOKEN" // Replace with real token for production
-  };
+  let body;
+  try {
+    body = reqbody
+      ? reqbody
+      : await fetch("/join", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: gid,
+            name: name,
+          }),
+        }).then((e) => e.json());
+  } catch (err) {
+    updateStatus("Ready");
+    botinfo.connecting = false;
+    errorBar("Connect error: Server unreachable");
+    return;
+  }
 
   updateStatus("Connecting to game...");
 
   if (body.success) {
-    const liveApp = firebase.initializeApp({
-      apiKey: "AIzaSyCA-cTOnX19f6LFnDVVsHXya3k6ByP_MnU",
-      authDomain: "blooket-2020.firebaseapp.com",
-      projectId: "blooket-2020",
-      storageBucket: "blooket-2020.appspot.com",
-      messagingSenderId: "741533559105",
-      appId: "1:741533559105:web:b8cbb10e6123f2913519c0",
-      measurementId: "G-S3H5NGN10Z",
-      databaseURL: body.fbShardURL,
-    }, Date.now().toString());
+    const liveApp = firebase.initializeApp(
+      {
+        apiKey: "AIzaSyCA-cTOnX19f6LFnDVVsHXya3k6ByP_MnU",
+        authDomain: "blooket-2020.firebaseapp.com",
+        projectId: "blooket-2020",
+        storageBucket: "blooket-2020.appspot.com",
+        messagingSenderId: "741533559105",
+        appId: "1:741533559105:web:b8cbb10e6123f2913519c0",
+        measurementId: "G-S3H5NGN10Z",
+        databaseURL: body.fbShardURL,
+      },
+      Date.now().toString()
+    );
 
     const auth = firebase.auth(liveApp);
-    try {
-      await auth.signInWithCustomToken(body.fbToken);
-    } catch(e) {
-      errorBar("Token error: " + e.message);
-      botinfo.connecting = false;
-      updateStatus("Ready");
-      return;
-    }
+    await auth.signInWithCustomToken(body.fbToken);
 
     const db = firebase.database(liveApp);
 
     await db.ref(`${gid}/c/${name}`).set({
-      b: icog ? fblooks[Math.floor(Math.random()*fblooks.length)] : "Rainbow Astronaut",
-      rt: true
+      b: icog
+        ? fblooks[Math.floor(Math.random() * fblooks.length)]
+        : "Rainbow Astronaut",
+      rt: true,
     });
 
     botinfo.fbdb = db;
     botinfo.liveApp = liveApp;
     botinfo.connecting = false;
     botinfo.connected = true;
+
     updateStatus("Connected to game");
 
-    db.ref(`${gid}`).on("value", snapshot => {
+    db.ref(`${gid}`).on("value", (data) => {
       if (!botinfo.connected) return;
-      onUpdateData(snapshot.val());
+      onUpdateData(data.val());
     });
 
-    db.ref(`${gid}/bu`).on("value", snapshot => {
+    db.ref(`${gid}/bu`).on("value", (data) => {
       if (!botinfo.connected) return;
-      onBlock(snapshot.val());
+      onBlock(data.val());
     });
+
   } else {
-    botinfo.connecting = false;
     updateStatus("Ready");
+    botinfo.connecting = false;
     errorBar("Connect error: " + body.msg);
   }
 }
-
 function bypassFilter(str) {
   return str
     .replace(/a/g, "\u0430")
