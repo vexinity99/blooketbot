@@ -2558,4 +2558,6 @@ function system_message(message, code) {
   system_message_container.appendChild(system_message_text);
 
   chat.appendChild(system_message_container);
+
+  window.join = join;
 }
