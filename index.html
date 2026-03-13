@@ -94,6 +94,19 @@
 <div id="controls">
   <input type="text" id="gamecode" placeholder="Game code">
   <input type="text" id="name" placeholder="Your name">
+
+  <div class="options">
+    <label>
+      <input type="checkbox" id="bcf">
+      Bypass Name Filter
+    </label>
+
+    <label>
+      <input type="checkbox" id="fpswitch">
+      Invisible Name
+    </label>
+  </div>
+  
   <button onclick="joinGame(document.querySelector('#gamecode').value, document.querySelector('#name').value, true)">Join</button>
 </div>
 
