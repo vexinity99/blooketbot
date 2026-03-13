@@ -340,6 +340,21 @@ var fvals = {
   Factory: "ca",
 };
 
+function errorBar(msg) {
+  const bar = document.getElementById("errorBar");
+
+  if (!bar) {
+    alert(msg);
+    return;
+  }
+
+  bar.innerText = msg;
+  bar.style.opacity = "1";
+
+  setTimeout(() => {
+    bar.style.opacity = "0";
+  }, 3000);
+}
 
 var cheats = {
   Hack: [
@@ -1794,16 +1809,23 @@ function activateAuto() {
 }
 
 //DOM FUNCTIONS:
-document.querySelector("#gcode").addEventListener("keydown", (e) => {
-  if (e.keyCode == 13) {
-    join();
-  }
-});
-document.querySelector("#gname").addEventListener("keydown", (e) => {
-  if (e.keyCode == 13) {
-    join();
-  }
-});
+const gcodeInput = document.querySelector("#gcode");
+if (gcodeInput) {
+  gcodeInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      join();
+    }
+  });
+}
+
+const gnameInput = document.querySelector("#gname");
+if (gnameInput) {
+  gnameInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      join();
+    }
+  });
+}
 
 function createNormText(text) {
   var a = document.createElement("div");
