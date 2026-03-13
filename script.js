@@ -2147,72 +2147,104 @@ function genMessage(msg, amt) {
   return t;
 }
 //firebase code
-async function connect(gid, name, icog) {
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js';
+import { getAuth, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js';
+import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js';
+
+const botinfo = {
+  connected: false,
+  connecting: false,
+  name: "",
+  gid: "",
+  fbdb: null,
+  liveApp: null,
+};
+
+export async function connect(gid, name, icog) {
+  const status = document.getElementById("status");
   botinfo.connected = false;
   botinfo.connecting = true;
   botinfo.name = name;
   botinfo.gid = gid;
 
-  updateStatus("Connecting to game...");
+  status.innerText = "Fetching token...";
 
+  let body;
   try {
-    // Construct the Firebase shard URL and token manually
-    // Replace these with a valid game's info for testing
-    const body = {
-      success: true,
-      fbShardURL: "https://blooket-2020-default-rtdb.firebaseio.com/", // example shard
-      fbToken: "YOUR_GAME_TOKEN_HERE" // this needs to be the actual Firebase custom token
-    };
-
-    const liveApp = initializeApp(
-      {
-        apiKey: "AIzaSyCA-cTOnX19f6LFnDVVsHXya3k6ByP_MnU",
-        authDomain: "blooket-2020.firebaseapp.com",
-        projectId: "blooket-2020",
-        storageBucket: "blooket-2020.appspot.com",
-        messagingSenderId: "741533559105",
-        appId: "1:741533559105:web:b8cbb10e6123f2913519c0",
-        measurementId: "G-S3H5NGN10Z",
-        databaseURL: body.fbShardURL,
-      },
-      Date.now().toString()
-    );
-
-    const auth = getAuth(liveApp);
-    await signInWithCustomToken(auth, body.fbToken);
-
-    const db = getDatabase(liveApp);
-
-    await set(ref(db, `${gid}/c/${name}`), {
-      b: icog
-        ? fblooks[Math.floor(Math.random() * fblooks.length)]
-        : "Rainbow Astronaut",
-      rt: true
+    const res = await fetch("/join", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: gid, name }),
     });
-
-    botinfo.fbdb = db;
-    botinfo.liveApp = liveApp;
-    botinfo.connecting = false;
-    botinfo.connected = true;
-
-    updateStatus("Connected to game");
-
-    // Listen for updates
-    onValue(ref(db, `${gid}`), (data) => {
-      if (!botinfo.connected) return;
-      onUpdateData(data.val());
-    });
-
-    onValue(ref(db, `${gid}/bu`), (data) => {
-      if (!botinfo.connected) return;
-      onBlock(data.val());
-    });
-
+    body = await res.json();
   } catch (err) {
-    updateStatus("Ready");
+    status.innerText = "Failed to fetch token!";
+    console.error(err);
     botinfo.connecting = false;
-    errorBar("Connect error: " + err.message);
+    return;
   }
+
+  if (!body.success) {
+    status.innerText = "Error: " + body.msg;
+    botinfo.connecting = false;
+    return;
+  }
+
+  status.innerText = "Connecting to game...";
+  const liveApp = initializeApp({
+    apiKey: "AIzaSyCA-cTOnX19f6LFnDVVsHXya3k6ByP_MnU",
+    authDomain: "blooket-2020.firebaseapp.com",
+    projectId: "blooket-2020",
+    storageBucket: "blooket-2020.appspot.com",
+    messagingSenderId: "741533559105",
+    appId: "1:741533559105:web:b8cbb10e6123f2913519c0",
+    measurementId: "G-S3H5NGN10Z",
+    databaseURL: body.fbShardURL,
+  }, Date.now().toString());
+
+  const auth = getAuth(liveApp);
+  try {
+    await signInWithCustomToken(auth, body.fbToken);
+  } catch (err) {
+    status.innerText = "Firebase auth failed!";
+    console.error(err);
+    botinfo.connecting = false;
+    return;
+  }
+
+  const db = getDatabase(liveApp);
+  await set(ref(db, `${gid}/c/${name}`), {
+    b: icog ? randomLook() : "Rainbow Astronaut",
+    rt: true,
+  });
+
+  botinfo.fbdb = db;
+  botinfo.liveApp = liveApp;
+  botinfo.connecting = false;
+  botinfo.connected = true;
+
+  status.innerText = "Connected!";
+
+  // Listen for updates
+  onValue(ref(db, `${gid}`), data => {
+    if (!botinfo.connected) return;
+    console.log("Game data update:", data.val());
+  });
+}
+
+// Example helper
+function randomLook() {
+  const fblooks = ["Rainbow Astronaut","Purple Penguin","Green Goblin","Blue Robot"];
+  return fblooks[Math.floor(Math.random() * fblooks.length)];
+}
+
+// Optional: set a value in the user object
+export async function setUserVal(path, val) {
+  if (!botinfo.connected) {
+    console.error("Not connected!");
+    return;
+  }
+  await set(ref(botinfo.fbdb, `/${botinfo.gid}/c/${botinfo.name}/${path}`), val);
 }
 
 function bypassFilter(str) {
