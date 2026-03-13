@@ -1,71 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Blooket Bot</title>
-<style>
-body { font-family: sans-serif; background-color: #0b3d0b; color: white; text-align: center; padding: 2em; }
-input { padding: 0.5em; font-size: 1.2em; margin: 0.5em; }
-button { padding: 0.5em 1em; font-size: 1.2em; cursor: pointer; }
-#status { margin-top: 1em; font-weight: bold; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blooket Bot</title>
+  <link rel="icon" href="https://cdn.glitch.global/50648a61-8fe9-4ce0-a01c-baff9438bbf2/bblogo.png">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:400,700|Titan+One|Creepster|Satisfy|Eczar:700">
+  <style>
+    * { box-sizing: border-box; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: Nunito, sans-serif; background-color: #098c41; color: #fff; }
+    
+    .mainBody { padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    
+    .normtext { font-family: Titan One, sans-serif; font-size: 40px; margin: 5px 0; user-select: none; }
+    .btext { font-size: 140%; color: #5f5f5f; user-select: none; }
+    
+    .codecontainer { background-color: #fff; color: #3a3a3a; border-radius: 10px; padding: 20px; margin: 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 0 10px #0003; }
+    
+    .idInputContainer, .nameInputContainer { width: 300px; height: 60px; margin: 10px 0; border-radius: 6px; box-shadow: inset 0 -6px #0003, 0 0 4px #00000026; }
+    .idInput, .nameInput { width: 100%; height: 100%; padding: 5px; font-size: 35px; font-weight: 700; text-align: center; border: none; outline: none; color: #5f5f5f; background-color: transparent; font-family: Nunito, sans-serif; }
+    
+    .joinButton { width: 120px; height: 60px; margin: 10px 0; display: flex; justify-content: center; align-items: center; background: #fff; color: #3a3a3a; font-size: 22px; font-weight: bold; border-radius: 6px; cursor: pointer; box-shadow: inset 0 -6px #0003, 0 0 4px #00000026; transition: 0.2s; }
+    .joinButton:hover { transform: scale(0.95); }
+    
+    .checkbox-label { display: flex; align-items: center; font-family: Titan One, sans-serif; font-size: 30px; margin: 5px 0; cursor: pointer; }
+    .checkbox-label input { width: 25px; height: 25px; margin-right: 10px; cursor: pointer; }
+    
+    .chat { position: fixed; bottom: 20px; right: 20px; width: 350px; background-color: orange; border-radius: 10px; display: flex; flex-direction: column; display: none; }
+    .chatcontainer { background-color: #202020a0; flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column-reverse; max-height: 250px; border-radius: 10px 10px 0 0; }
+    .chatmsg { color: white; font-size: 18px; margin: 3px 0; }
+    .chatinpcontainer { display: flex; }
+    .chatinpcontainer input { flex: 1; padding: 8px; font-size: 18px; border: none; border-radius: 0 0 0 10px; }
+    
+    .errorBar { position: fixed; top: 0; left: 0; width: 100%; min-height: 55px; background-color: #e84135; color: #fff; display: flex; justify-content: center; align-items: center; font-size: 20px; transform: translateY(-100%); transition: 0.3s; z-index: 100; }
+    
+    a { color: #fff; text-decoration: underline; }
+  </style>
 </head>
 <body>
-<h1>Blooket Bot</h1>
-<input id="gid" placeholder="Game ID">
-<input id="gname" placeholder="Nickname">
-<button onclick="joinGame()">Join</button>
-<div id="status">Status: Idle</div>
+  <div class="mainBody">
+    <div class="codecontainer">
+      <div class="normtext">Enter code:</div>
+      <div class="idInputContainer">
+        <input id="gcode" class="idInput" placeholder="Game ID">
+      </div>
+      <div class="nameInputContainer">
+        <input id="gname" class="nameInput" placeholder="Nickname">
+      </div>
+      <div class="joinButton" onclick="join();">Join</div>
 
-<script type="module">
-import { initializeApp, getApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js';
-import { getAuth, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js';
-import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js';
+      <label class="checkbox-label">Incognito Mode <input type="checkbox" id="icogmode" checked></label>
+      <label class="checkbox-label">Bypass Filter <input type="checkbox" id="bcf"></label>
+      <label class="checkbox-label">First Place Switch <input type="checkbox" id="fpswitch" checked></label>
+    </div>
 
-async function joinGame() {
-  const gid = document.getElementById("gid").value;
-  const name = document.getElementById("gname").value;
-  const status = document.getElementById("status");
-  status.innerText = "Fetching token...";
+    <div class="normtext" id="status">Status: Loading...</div>
+    <div class="normtext">Created by <a href="https://www.youtube.com/@crypto.7562" target="_blank">Ducklife3141</a></div>
+    <div class="normtext"><a href="https://discord.com/invite/WYsFbAgY2v" target="_blank">Join the discord server!</a></div>
+  </div>
 
-  try {
-    const res = await fetch("/join", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: gid, name: name })
-    });
-    const body = await res.json();
+  <div class="chat" id="chatbox">
+    <div class="chatcontainer" id="chatlog"></div>
+    <div class="chatinpcontainer">
+      <input id="chat" placeholder="Type a message...">
+    </div>
+  </div>
 
-    if (!body.success) {
-      status.innerText = "Error: " + body.msg;
-      return;
+  <div class="errorBar" id="error">Error goes here</div>
+
+  <script src="script.js" type="module"></script>
+  <script>
+    function join() {
+      const gid = document.getElementById("gcode").value;
+      const name = document.getElementById("gname").value;
+      const icog = document.getElementById("icogmode").checked;
+      fetch("/join", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: gid, name: name })
+      }).then(r => r.json()).then(res => {
+        if (res.success) {
+          updateStatus("Connected to game");
+        } else {
+          showError("Connect error: " + res.msg);
+        }
+      }).catch(err => {
+        showError("Fetch error: " + err);
+      });
     }
 
-    status.innerText = "Connecting to game...";
-    const liveApp = initializeApp({
-      apiKey: "AIzaSyCA-cTOnX19f6LFnDVVsHXya3k6ByP_MnU",
-      authDomain: "blooket-2020.firebaseapp.com",
-      projectId: "blooket-2020",
-      storageBucket: "blooket-2020.appspot.com",
-      messagingSenderId: "741533559105",
-      appId: "1:741533559105:web:b8cbb10e6123f2913519c0",
-      measurementId: "G-S3H5NGN10Z",
-      databaseURL: body.fbShardURL
-    }, Date.now().toString());
+    function updateStatus(msg) {
+      document.getElementById("status").innerText = "Status: " + msg;
+    }
 
-    const auth = getAuth(liveApp);
-    await signInWithCustomToken(auth, body.fbToken);
-
-    const db = getDatabase(liveApp);
-    await set(ref(db, `${gid}/c/${name}`), { b: "Rainbow Astronaut", rt: true });
-
-    status.innerText = "Connected!";
-    onValue(ref(db, `${gid}`), data => console.log("Game update:", data.val()));
-  } catch (err) {
-    console.error(err);
-    status.innerText = "Error connecting!";
-  }
-}
-</script>
+    function showError(msg) {
+      const e = document.getElementById("error");
+      e.innerText = msg;
+      e.style.transform = "translateY(0%)";
+      setTimeout(() => { e.style.transform = "translateY(-100%)"; }, 4000);
+      console.error(msg);
+    }
+  </script>
 </body>
 </html>
